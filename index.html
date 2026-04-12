@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>HYPER+ • Calculadora & Jogo (v3.2.1 completo)</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    /* ========== RESET & BASE ========== */
+    * { margin:0; padding:0; box-sizing:border-box; user-select:none; -webkit-tap-highlight-color:transparent; }
+    body { background:#0b0e14; display:flex; align-items:center; justify-content:center; font-family:'Inter',sans-serif; height:100vh; overflow:hidden; touch-action:none; transition:background 0.3s; }
+    body.light-theme { background:#e0e5ec; }
+    
+    #splashScreen { position:fixed; top:0; left:0; width:100%; height:100%; background:radial-gradient(circle at 30% 30%, #0a2a4a, #020812); display:flex; align-items:center; justify-content:center; z-index:9999; color:white; flex-direction:column; transition:opacity 1.2s; overflow:hidden; }
+    .aurora-splash { position:absolute; width:200%; height:200%; background:linear-gradient(45deg, #00ffc310, #0066ff20, #ff00ff10); animation:auroraFlow 12s infinite alternate; }
+    @keyframes auroraFlow { 0% { transform:translate(-30%,-30%) rotate(0deg); opacity:0.4; } 100% { transform:translate(-10%,-10%) rotate(10deg); opacity:0.8; } }
+    #splashText { font-size:2.2rem; font-weight:800; text-shadow:0 0 30px #00ffff,0 0 60px #0066ff; animation:pulseGlow 2.5s infinite; z-index:1; }
+    @keyframes pulseGlow { 0% { opacity:0.8; text-shadow:0 0 20px cyan; } 50% { opacity:1; text-shadow:0 0 50px #00aaff,0 0 20px magenta; } 100% { opacity:0.8; text-shadow:0 0 20px cyan; } }
+    .splash-sub { margin-top:20px; font-size:1.1rem; color:#b0e0ff; letter-spacing:4px; z-index:1; }
+
+    .hyper-app { width:100%; max-width:500px; height:100vh; max-height:900px; background:#1a1e26; display:flex; flex-direction:column; box-shadow:0 0 40px rgba(0,0,0,0.8); border:1px solid #2a2e3a; overflow:hidden; position:relative; transition:background 0.3s; }
+    body.light-theme .hyper-app { background:#f0f4f8; border-color:#c0c5d0; }
+    
+    .calc-header { padding:8px 12px; border-bottom:1px solid #2a2e3a; background:#1a1e26; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; transition:background 0.3s; gap:8px; }
+    body.light-theme .calc-header { background:#f0f4f8; border-color:#c0c5d0; }
+    .header-left { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+    .vertical-clock { background:#0f131a; border-radius:20px; padding:6px 10px; border:1px solid #3a4a6a; box-shadow:inset 0 3px 8px #05070a,0 3px 0 #1a1e26; display:flex; flex-direction:column; align-items:center; font-family:'Share Tech Mono',monospace; min-width:65px; }
+    body.light-theme .vertical-clock { background:#ffffff; box-shadow:inset 0 3px 8px #d0d8e8,0 3px 0 #c0c5d0; border-color:#a0a5b0; }
+    .clock-time-v { font-size:1.4rem; font-weight:700; color:#a0d0ff; text-shadow:0 0 10px #4a6fa5; line-height:1.2; }
+    body.light-theme .clock-time-v { color:#1a1e26; text-shadow:none; }
+    .clock-seconds-v { font-size:0.9rem; color:#f0b050; animation:blink 1s step-end infinite; margin:2px 0; }
+    .clock-date-v { font-size:0.6rem; color:#7a9fd0; text-transform:uppercase; }
+    @keyframes blink { 50% { opacity:0.3; } }
+    .header-right { display:flex; align-items:center; gap:8px; overflow-x:auto; overflow-y:hidden; scrollbar-width:none; -ms-overflow-style:none; flex:1; justify-content:flex-end; }
+    .header-right::-webkit-scrollbar { display:none; }
+    .mode-indicators { display:flex; gap:6px; flex-shrink:0; transition:opacity 0.2s; }
+    .mode-badge { background:#2a2e3a; padding:4px 8px; border-radius:16px; font-size:0.65rem; font-weight:700; color:#b0b8c8; border:1px solid #4a5a7a; white-space:nowrap; }
+    body.light-theme .mode-badge { background:#d0d8e8; color:#1a1e26; border-color:#a0a5b0; }
+    .calc-toolbar { display:flex; gap:5px; transition:opacity 0.2s; flex-shrink:0; }
+    .shift-btn { background:#2a2e3a; border:1px solid #4a5a7a; border-radius:16px; padding:5px 8px; font-size:0.6rem; font-weight:700; color:#c0c5d0; cursor:pointer; box-shadow:inset 0 1px 2px #0f131a,0 2px 0 #1a1e26; transform:translateY(-1px); white-space:nowrap; transition:all 0.05s; }
+    .shift-btn:active { transform:translateY(1px); box-shadow:inset 0 1px 2px #0f131a,0 1px 0 #1a1e26; }
+    .shift-btn.active { background:#4a6fa5; color:white; border-color:#7a9fd0; box-shadow:0 0 15px #4a6fa5; }
+    .menu-btn { width:36px; height:36px; border-radius:18px; background:#2a2e3a; border:1px solid #4a5a7a; font-size:20px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#c0c5d0; flex-shrink:0; transition:all 0.1s; }
+    .menu-btn:active { background:#4a6fa5; color:white; }
+
+    .main-layout { display:flex; flex:1; overflow:hidden; }
+    .side-menu { width:0; background:rgba(21,26,34,0.95); backdrop-filter:blur(4px); border-right:1px solid #3a5a7a; overflow-y:auto; transition:width 0.25s ease; box-shadow:2px 0 20px rgba(0,0,0,0.5); }
+    .side-menu.open { width:240px; }
+    .menu-section { padding:18px 12px; border-bottom:1px solid #2a4a6a; }
+    .menu-title { color:#b0c8e0; font-size:0.75rem; text-transform:uppercase; margin-bottom:12px; letter-spacing:1.5px; text-shadow:0 0 8px #4a6fa5; }
+    .menu-item { padding:10px 12px; color:#d8e4ff; font-size:0.9rem; border-radius:14px; cursor:pointer; display:flex; align-items:center; gap:10px; transition:all 0.15s; background:rgba(42,46,58,0.5); margin-bottom:4px; border:1px solid transparent; }
+    .menu-item:hover { background:#3a4a6a; border-color:#7a9fd0; box-shadow:0 0 12px #4a6fa5; }
+    .menu-item .icon { font-size:1.3rem; }
+
+    .content-area { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+    .display-container { background:#0c101a; border-radius:24px; padding:16px 18px; margin:12px 10px 8px; box-shadow:inset 0 8px 12px #030408, 0 4px 0 #1a1e26, 0 0 20px #1a3a5a; border-bottom:2px solid #3a5a7a; position:relative; overflow:hidden; }
+    body.light-theme .display-container { background:#ffffff; box-shadow:inset 0 6px 10px #d0d8e8,0 3px 0 #c0c5d0; }
+    .aurora-effect { position:absolute; top:0; left:0; width:100%; height:100%; background:linear-gradient(45deg, transparent, rgba(0,255,200,0.05), transparent); animation:auroraSlide 6s infinite; pointer-events:none; }
+    @keyframes auroraSlide { 0% { transform:translateX(-100%); } 100% { transform:translateX(100%); } }
+    #expressionDisplay { 
+      font-size:1.2rem; color:#b0d0ff; min-height:2.2rem; text-align:right; 
+      font-family:'SF Mono', 'Fira Code', monospace; margin-bottom:6px; word-break:break-all;
+      background:transparent; border:none; width:100%; outline:none; pointer-events:auto;
+      user-select:text; -webkit-user-select:text; text-shadow:0 0 5px #2a5a8a;
+    }
+    #resultDisplay { 
+      font-size:2.8rem; font-weight:350; text-align:right; color:#e0f0ff; 
+      font-family:'SF Mono', 'Fira Code', monospace; min-height:4rem; word-break:break-word;
+      background:transparent; border:none; width:100%; outline:none; pointer-events:auto;
+      user-select:text; -webkit-user-select:text; text-shadow:0 0 15px #4a6fa5;
+    }
+    body.light-theme #resultDisplay { color:#1a1e26; text-shadow:none; }
+    .pending-indicator { color:#f0b050; font-size:0.8rem; margin-top:4px; text-align:right; }
+    .scrollable-area { flex:1; overflow-y:auto; padding:0 10px 10px; scroll-behavior:smooth; }
+
+    .func-rows { margin-bottom:8px; }
+    .func-row { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-bottom:8px; }
+    .func-btn { 
+      background:linear-gradient(145deg, #2a2e3a, #1a1e26); 
+      border:1px solid #4a5a7a; border-radius:18px; padding:8px 2px; 
+      font-size:0.7rem; font-weight:600; color:#d0d8e8; text-align:center; cursor:pointer;
+      box-shadow:inset 0 1px 3px #3a4a6a, 0 4px 0 #0f131a, 0 2px 5px black;
+      transform:translateY(-2px); transition:all 0.06s; text-shadow:0 1px 2px black;
+    }
+    .func-btn:active { transform:translateY(2px); box-shadow:inset 0 1px 3px #3a4a6a, 0 2px 0 #0f131a; }
+    .keypad { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:6px; padding-bottom:12px; }
+    .key-btn { 
+      aspect-ratio:1.1/1; border-radius:24px; 
+      background:linear-gradient(145deg, #2a2e3a, #1a1e26); 
+      border:1px solid #5a6a8a; box-shadow:0 6px 0 #0f131a, 0 4px 8px black; 
+      font-size:1.4rem; font-weight:600; color:#f0f4ff; 
+      display:flex; align-items:center; justify-content:center; cursor:pointer; 
+      transform:translateY(-3px); transition:all 0.06s; text-shadow:0 1px 2px black;
+    }
+    .key-btn:active { transform:translateY(3px); box-shadow:0 3px 0 #0f131a, 0 4px 8px black; }
+    .key-btn.operator { background:linear-gradient(145deg, #4a6fa5, #2a4a7a); border-color:#7a9fd0; }
+    .key-btn.equal { background:linear-gradient(145deg, #e08a1a, #b06a0a); border-color:#f0b050; color:#1a1a2a; }
+    .history-panel { background:rgba(21,26,34,0.8); backdrop-filter:blur(4px); border-radius:20px; padding:12px; margin-top:12px; max-height:150px; overflow-y:auto; border:1px solid #3a5a7a; box-shadow:inset 0 2px 5px black; }
+    .history-item { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #2a3a5a; color:#c8d4e8; font-family:monospace; font-size:0.8rem; cursor:pointer; transition:background 0.1s; }
+    .history-item:hover { background:#2a3a5a; }
+    .clear-history { cursor:pointer; color:#f0b050; }
+
+    #gamePanel { padding:12px; width:100%; overflow-y:auto; display:flex; flex-direction:column; align-items:center; gap:12px; }
+    #gameCanvas { width:100%; max-width:400px; aspect-ratio:2/3; border-radius:30px; border:3px solid #4a6fa5; box-shadow:0 12px 0 #1a1e26, 0 0 30px #2a4a7a; background:transparent; touch-action:none; }
+    .game-status-bar { display:flex; justify-content:space-between; width:100%; max-width:400px; }
+    .game-ui-container { width:100%; max-width:400px; display:flex; flex-direction:column; align-items:center; gap:16px; }
+    .game-controls { display:flex; width:100%; justify-content:space-between; }
+    .game-ctrl-btn { background:linear-gradient(145deg, #3a4a6a, #1a2a4a); border:2px solid #7a9fd0; border-radius:60px; width:85px; height:85px; font-size:3.2rem; color:white; box-shadow:0 12px 0 #0f1a2a, 0 0 25px #4a6fa5; cursor:pointer; display:flex; align-items:center; justify-content:center; transform:translateY(-3px); transition:all 0.06s; }
+    .game-ctrl-btn:active { transform:translateY(6px); box-shadow:0 6px 0 #0f1a2a, 0 0 30px #4a6fa5; }
+    .start-btn, .restart-btn { background:linear-gradient(145deg, #5a8fc0, #2a4a7a); font-size:1.8rem; padding:14px 36px; border-radius:50px; box-shadow:0 12px 0 #1a2a4a, 0 0 30px #4a6fa5; cursor:pointer; border:none; color:white; font-weight:bold; letter-spacing:1px; transform:translateY(-3px); transition:all 0.06s; }
+    .restart-btn { background:linear-gradient(145deg, #8a6a4a, #5a3a2a); }
+    .character-strip { display:flex; gap:10px; overflow-x:auto; padding:6px 4px; max-width:100%; justify-content:center; }
+    .char-option { width:60px; height:60px; border-radius:30px; background:linear-gradient(145deg, #3a4a6a, #1a2a4a); border:2px solid #7a9fd0; box-shadow:0 8px 0 #0f1a2a; font-size:34px; line-height:60px; text-align:center; cursor:pointer; transition:all 0.1s; }
+    .char-option:active { transform:scale(0.92); }
+    .char-option.selected { background:#4a6fa5; border-color:#ffd966; box-shadow:0 0 25px #4a6fa5; }
+    
+    #floatingModeBtn { position:absolute; bottom:20px; right:20px; width:56px; height:56px; border-radius:30px; background:#4a6fa5; border:1px solid #7a9fd0; box-shadow:0 6px 0 #2a3a5a; font-size:28px; color:white; cursor:move; z-index:50; touch-action:none; user-select:none; display:flex; align-items:center; justify-content:center; }
+    
+    .modal-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(2px); display:flex; align-items:center; justify-content:center; z-index:100; }
+    .modal-content { background:#1a1e26; border:2px solid #4a5a7a; border-radius:30px; padding:24px; width:340px; color:#d0d8e8; box-shadow:0 20px 30px rgba(0,0,0,0.5); }
+    .modal-title { font-size:1.4rem; margin-bottom:20px; text-align:center; text-shadow:0 0 10px #4a6fa5; }
+    .modal-option { display:flex; justify-content:space-between; margin-bottom:16px; }
+    .modal-btn { background:#2a2e3a; border:1px solid #4a5a7a; padding:8px 20px; border-radius:20px; color:white; cursor:pointer; }
+    .hidden { display:none !important; }
+  </style>
+</head>
+<body>
+<div id="splashScreen">
+  <div class="aurora-splash"></div>
+  <div id="splashText">✨ HYPER+ ✨</div>
+  <div class="splash-sub">Mucupela Studios</div>
+</div>
+
+<div class="hyper-app" style="display:none;">
+  <div class="calc-header">
+    <div class="header-left">
+      <button class="menu-btn" id="menuToggleBtn">☰</button>
+      <div class="vertical-clock" id="liveClockContainer">
+        <span class="clock-time-v" id="clockTimeV">--:--</span>
+        <span class="clock-seconds-v" id="clockSecondsV">--</span>
+        <span class="clock-date-v" id="clockDateV">---</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="mode-indicators" id="modeIndicators">
+        <span class="mode-badge" id="angleModeBadge">DEG</span>
+        <span class="mode-badge" id="baseModeBadge">DEC</span>
+      </div>
+      <div class="calc-toolbar" id="calcToolbar">
+        <button class="shift-btn" id="shiftBtn">SHIFT</button>
+        <button class="shift-btn" id="alphaBtn">ALPHA</button>
+        <button class="shift-btn" id="modeBtn">MODE</button>
+        <button class="shift-btn" id="secondBtn">2nd</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-layout">
+    <div class="side-menu" id="sideMenu">
+      <div class="menu-section"><div class="menu-title">MATEMÁTICA</div>
+        <div class="menu-item" data-mode="formulas"><span class="icon">📐</span> Fórmulas</div>
+        <div class="menu-item" data-mode="graph"><span class="icon">📈</span> Gráfico</div>
+        <div class="menu-item" data-mode="derivative"><span class="icon">📉</span> Derivada</div>
+        <div class="menu-item" data-mode="integral"><span class="icon">∫</span> Integral</div>
+      </div>
+      <div class="menu-section"><div class="menu-title">FERRAMENTAS</div>
+        <div class="menu-item" data-mode="scientific"><span class="icon">🧮</span> Científica</div>
+        <div class="menu-item" data-mode="converter"><span class="icon">🔄</span> Conversor</div>
+        <div class="menu-item" data-mode="programmer"><span class="icon">💻</span> Programador</div>
+        <div class="menu-item" data-mode="history"><span class="icon">📜</span> Histórico</div>
+      </div>
+      <div class="menu-section"><div class="menu-title">SISTEMA</div>
+        <div class="menu-item" data-mode="settings"><span class="icon">⚙️</span> Configurações</div>
+        <div class="menu-item" data-mode="about"><span class="icon">ℹ️</span> Sobre</div>
+        <div class="menu-item" data-mode="manual"><span class="icon">📘</span> Manual</div>
+      </div>
+    </div>
+
+    <div class="content-area" id="calcContent">
+      <div class="display-container">
+        <div class="aurora-effect"></div>
+        <input type="text" id="expressionDisplay" placeholder="0" value="" readonly spellcheck="false" autocomplete="off" autocapitalize="none">
+        <input type="text" id="resultDisplay" value="0" readonly>
+        <div id="pendingIndicator" class="pending-indicator"></div>
+      </div>
+      <div class="scrollable-area" id="dynamicButtonsArea"></div>
+    </div>
+
+    <div id="gamePanel" style="display:none;">
+      <div class="game-status-bar">
+        <span class="mode-badge">🎯 <span id="gameScore">0</span></span>
+        <span class="mode-badge">❤️ <span id="livesDisplay">3</span></span>
+        <span class="mode-badge">🏆 <span id="highScoreValue">0</span></span>
+      </div>
+      <canvas id="gameCanvas" width="400" height="600"></canvas>
+      <div class="game-ui-container" id="gameUIArea"></div>
+      <div style="text-align:center; color:#9aa5b5; font-size:0.9rem;">⚡ espaço / toque para pular ⚡</div>
+    </div>
+  </div>
+
+  <button class="game-toggle" id="floatingModeBtn">🎮</button>
+</div>
+
+<!-- Modais (mesmos do original) -->
+<div id="settingsModal" class="modal-overlay hidden">
+  <div class="modal-content">
+    <div class="modal-title">⚙️ Configurações</div>
+    <div class="modal-option"><span>Tema:</span> <button id="themeToggle" class="modal-btn">Escuro</button></div>
+    <div class="modal-option"><span>Som:</span> <button id="soundToggle" class="modal-btn">Ligado</button></div>
+    <div class="modal-option"><span>Vibração:</span> <button id="vibrateToggle" class="modal-btn">Ligado</button></div>
+    <div class="modal-option"><span>Idioma:</span> <button id="langToggle" class="modal-btn">Português</button></div>
+    <div class="modal-option"><span>Fonte:</span> <button id="fontSizeToggle" class="modal-btn">Médio</button></div>
+    <div class="modal-option"><span>Volume:</span> <input type="range" id="volumeSlider" min="0" max="100" value="80" style="width:120px;"></div>
+    <div class="modal-option"><span>Dificuldade:</span> <select id="difficultySelect" style="background:#2a2e3a; color:white; border-radius:12px; padding:4px;"><option>Normal</option><option>Difícil</option></select></div>
+    <button id="closeSettings" class="modal-btn" style="margin-top:16px;">Fechar</button>
+  </div>
+</div>
+
+<div id="aboutModal" class="modal-overlay hidden">
+  <div class="modal-content">
+    <div class="modal-title">ℹ️ Sobre o HYPER+</div>
+    <p><strong>🧑‍💻 Mucupela Studios</strong> — Criando experiências digitais desde 2025.</p>
+    <p>📱 <strong>Versão 3.2.1 "Aurora Pro"</strong></p>
+    <p>🛠️ Tecnologias: HTML5, CSS3, JavaScript (Math.js, Chart.js)</p>
+    <p>🧮 Calculadora científica avançada com display editável por botões e funções expandidas.</p>
+    <p>🎮 Jogo inspirado em Doodle Jump, com power‑ups e inimigos.</p>
+    <p>🌐 www.mucupela.com • contato@mucupela.com</p>
+    <p>© 2026 Todos os direitos reservados.</p>
+    <button id="closeAboutModal" class="modal-btn" style="margin-top:20px;">Fechar</button>
+  </div>
+</div>
+
+<div id="manualModal" class="modal-overlay hidden">
+  <div class="modal-content" style="max-height:80vh; overflow-y:auto; width:350px;">
+    <div class="modal-title">📘 Manual do Usuário</div>
+    <p><strong>🧮 Calculadora</strong><br>
+    • Display de expressão: toque para selecionar/copiar. Edição exclusiva pelos botões (sem teclado do sistema).<br>
+    • Use ← → virtuais para mover o cursor. DEL apaga caractere, CLR limpa tudo.<br>
+    • Teclas expandidas: STO, RCL, ENG, CONST, CONV, Pol, Rec, Ran#, PreAns, GCD, LCM.<br>
+    • Modo Científico, Conversor, Programador, Gráfico, Derivada/Integral numérica.</p>
+    <p><strong>🎮 Jogo</strong><br>
+    • START: escolha avatar. Setas ou teclado para mover, espaço/toque para pular.<br>
+    • Plataformas: +2 pontos. Inimigos: aparecem após 25s (+5 pts ao pisar). Escudos: após 30s (proteção, sem pontos).</p>
+    <button id="closeManualModal" class="modal-btn" style="margin-top:20px;">Entendi</button>
+  </div>
+</div>
+
+<div id="graphModal" class="modal-overlay hidden">
+  <div class="modal-content" style="width:90%; max-width:400px;"><div class="modal-title">📈 Gráfico</div><input id="graphInput" value="sin(x)" style="width:100%; padding:8px; background:#2a2e3a; color:white; border:none; border-radius:12px;"><canvas id="graphCanvas" width="350" height="250"></canvas><button id="plotGraphBtn">Plotar</button><button id="closeGraphModal">Fechar</button></div>
+</div>
+<div id="derivativeModal" class="modal-overlay hidden">
+  <div class="modal-content"><div class="modal-title">📉 Derivada Numérica</div><input id="derivFunc" value="x^2"><input id="derivPoint" value="1" type="number"><span id="derivResult">—</span><button id="computeDeriv">Calcular</button><button id="closeDerivModal">Fechar</button></div>
+</div>
+<div id="integralModal" class="modal-overlay hidden">
+  <div class="modal-content"><div class="modal-title">∫ Integral (0 → b)</div><input id="integralFunc" value="x^2"><input id="integralLimit" value="1" type="number"><span id="integralResult">—</span><button id="computeIntegral">Calcular</button><button id="closeIntegralModal">Fechar</button></div>
+</div>
+
+<script>
+  (function(){
+    "use strict";
+    const math = window.math;
+    
+    setTimeout(() => {
+      document.getElementById('splashScreen').style.opacity = '0';
+      setTimeout(() => {
+        document.getElementById('splashScreen').style.display = 'none';
+        document.querySelector('.hyper-app').style.display = 'flex';
+        initApp();
+      }, 1200);
+    }, 5000);
+
+    // ========== VARIÁVEIS GLOBAIS ==========
+    let soundEnabled = true, vibrateEnabled = true, currentTheme = 'dark', currentLang = 'pt', fontSize = 'medium';
+    let audioCtx = null;
+    
+    let currentVal = '0', exprStr = '', shouldReset = false, lastResult = '0', lastExpr = '';
+    let angleUnit = 'deg', baseMode = 'DEC', memory = 0, history = [];
+    let currentMode = 'basic';
+    let shiftActive = false, alphaActive = false, secondActive = false;
+    
+    let calcToolbar, calcContent, gamePanel, floatingBtn, sideMenu, menuToggle;
+    let resultInput, exprInput, angleBadge, baseBadge, pendingIndicator, dynamicArea, gameUI;
+    let gameScoreSpan, livesDisplay, highScoreSpan;
+    let shiftBtn, alphaBtn, modeBtn, secondBtn;
+    let settingsModal, themeToggle, soundToggle, vibrateToggle, langToggle, fontSizeToggle;
+    let modeIndicators;
+    
+    let gameState = 'start', gameInstance = null, currentEmoji = '😊';
+    const CHARACTERS = ['😊','👾','🤠','🤖','☃️','🦹','🕴️','🐉','🦍','🥶'];
+    const WORLDS = {
+      '😊': { bgTop: '#2a3a5a', bgBottom: '#1a2a3a' },
+      '👾': { bgTop: '#1a1a3a', bgBottom: '#0a0a2a', stars: true },
+      '🤠': { bgTop: '#5a4a3a', bgBottom: '#3a2a1a' },
+      '🤖': { bgTop: '#2a2a3a', bgBottom: '#1a1a2a', rain: true },
+      '☃️': { bgTop: '#a0b0d0', bgBottom: '#8090b0', snow: true },
+      '🦹': { bgTop: '#3a1a2a', bgBottom: '#1a0a1a', lava: true },
+      '🕴️': { bgTop: '#1a2a3a', bgBottom: '#0a1a2a', rain: true },
+      '🐉': { bgTop: '#4a1a1a', bgBottom: '#2a0a0a', fire: true },
+      '🦍': { bgTop: '#2a4a2a', bgBottom: '#1a3a1a' },
+      '🥶': { bgTop: '#1a2a4a', bgBottom: '#0a1a2a', aurora: true }
+    };
+
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('clockTimeV').textContent = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+      document.getElementById('clockSecondsV').textContent = String(now.getSeconds()).padStart(2,'0');
+      document.getElementById('clockDateV').textContent = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}`;
+    }
+
+    function initAudio() { if(!audioCtx) { try { audioCtx = new (window.AudioContext||window.webkitAudioContext)(); } catch(e){} } if(audioCtx?.state === 'suspended') audioCtx.resume(); return audioCtx; }
+    function playSound(type) {
+      if(!soundEnabled) return;
+      const ctx = initAudio(); if(!ctx) return;
+      if(ctx.state === 'suspended') ctx.resume();
+      const now = ctx.currentTime, gain = ctx.createGain(); gain.connect(ctx.destination);
+      const osc = ctx.createOscillator(); osc.connect(gain);
+      let freq=880, dur=0.1, vol=0.15, wave='sine';
+      if(type==='gameover') { freq=400; dur=0.5; vol=0.3; wave='sawtooth'; gain.gain.setValueAtTime(vol,now); gain.gain.linearRampToValueAtTime(0.001,now+dur); osc.frequency.setValueAtTime(freq,now); osc.frequency.exponentialRampToValueAtTime(100,now+0.4); }
+      else if(type==='click') { freq=800; dur=0.05; vol=0.1; }
+      else if(type==='powerup') { freq=1200; dur=0.15; vol=0.2; osc.frequency.setValueAtTime(freq,now); osc.frequency.exponentialRampToValueAtTime(1600,now+0.1); }
+      else if(type==='jump') { return; }
+      if(type!=='gameover' && type!=='powerup') { gain.gain.setValueAtTime(vol,now); gain.gain.linearRampToValueAtTime(0.001,now+dur); osc.frequency.setValueAtTime(freq,now); }
+      osc.type = wave; osc.start(); osc.stop(now+dur);
+    }
+    function playCharacterSound(emoji) {
+      if(!soundEnabled) return;
+      const ctx = initAudio(); if(!ctx) return;
+      const now = ctx.currentTime, gain = ctx.createGain(); gain.connect(ctx.destination);
+      const osc = ctx.createOscillator(); osc.connect(gain);
+      let freq=880, dur=0.12, vol=0.25, type='sine';
+      switch(emoji) {
+        case '😊': freq=880; break; case '👾': freq=600; type='square'; vol=0.2; break;
+        case '🤠': freq=1000; type='triangle'; break; case '🤖': freq=400; type='sawtooth'; vol=0.15; break;
+        case '☃️': freq=1200; break; case '🦹': freq=300; type='sawtooth'; vol=0.3; break;
+        case '🕴️': freq=800; type='square'; break; case '🐉': freq=200; type='sawtooth'; vol=0.35; dur=0.2; break;
+        case '🦍': freq=150; type='triangle'; vol=0.4; break; case '🥶': freq=1100; vol=0.15; break;
+      }
+      gain.gain.setValueAtTime(vol,now); gain.gain.linearRampToValueAtTime(0.001,now+dur);
+      osc.type = type; osc.frequency.setValueAtTime(freq,now); osc.frequency.exponentialRampToValueAtTime(freq*0.5,now+dur*0.8);
+      osc.start(); osc.stop(now+dur);
+    }
+    function vibrate(d) { if(vibrateEnabled && navigator.vibrate) navigator.vibrate(d); }
+
+    function initApp() {
+      calcToolbar = document.getElementById('calcToolbar');
+      calcContent = document.getElementById('calcContent');
+      gamePanel = document.getElementById('gamePanel');
+      floatingBtn = document.getElementById('floatingModeBtn');
+      sideMenu = document.getElementById('sideMenu');
+      menuToggle = document.getElementById('menuToggleBtn');
+      resultInput = document.getElementById('resultDisplay');
+      exprInput = document.getElementById('expressionDisplay');
+      angleBadge = document.getElementById('angleModeBadge');
+      baseBadge = document.getElementById('baseModeBadge');
+      pendingIndicator = document.getElementById('pendingIndicator');
+      dynamicArea = document.getElementById('dynamicButtonsArea');
+      gameUI = document.getElementById('gameUIArea');
+      gameScoreSpan = document.getElementById('gameScore');
+      livesDisplay = document.getElementById('livesDisplay');
+      highScoreSpan = document.getElementById('highScoreValue');
+      shiftBtn = document.getElementById('shiftBtn');
+      alphaBtn = document.getElementById('alphaBtn');
+      modeBtn = document.getElementById('modeBtn');
+      secondBtn = document.getElementById('secondBtn');
+      settingsModal = document.getElementById('settingsModal');
+      themeToggle = document.getElementById('themeToggle');
+      soundToggle = document.getElementById('soundToggle');
+      vibrateToggle = document.getElementById('vibrateToggle');
+      langToggle = document.getElementById('langToggle');
+      fontSizeToggle = document.getElementById('fontSizeToggle');
+      modeIndicators = document.getElementById('modeIndicators');
+
+      updateClock(); setInterval(updateClock, 1000);
+
+      themeToggle.onclick = () => { currentTheme = currentTheme==='dark'?'light':'dark'; document.body.classList.toggle('light-theme', currentTheme==='light'); themeToggle.textContent = currentTheme==='dark'?'Escuro':'Claro'; };
+      soundToggle.onclick = () => { soundEnabled = !soundEnabled; soundToggle.textContent = soundEnabled?'Ligado':'Desligado'; };
+      vibrateToggle.onclick = () => { vibrateEnabled = !vibrateEnabled; vibrateToggle.textContent = vibrateEnabled?'Ligado':'Desligado'; };
+      langToggle.onclick = () => { currentLang = currentLang==='pt'?'en':'pt'; langToggle.textContent = currentLang==='pt'?'Português':'English'; };
+      fontSizeToggle.onclick = () => { const sizes={small:'12px',medium:'16px',large:'20px'}; fontSize = fontSize==='small'?'medium':fontSize==='medium'?'large':'small'; fontSizeToggle.textContent = fontSize==='small'?'Pequeno':fontSize==='medium'?'Médio':'Grande'; document.querySelector('.hyper-app').style.fontSize = sizes[fontSize]; };
+      document.getElementById('closeSettings').onclick = () => settingsModal.classList.add('hidden');
+
+      // Botão flutuante arrastável (mantido igual)
+
+      let startX, startY, startLeft, startTop, dragging = false, moved = false;
+      const DRAG_THRESHOLD = 5;
+      function onPointerDown(e) {
+        e.preventDefault();
+        const rect = floatingBtn.getBoundingClientRect();
+        startX = e.clientX; startY = e.clientY;
+        startLeft = parseFloat(floatingBtn.style.left) || rect.left;
+        startTop = parseFloat(floatingBtn.style.top) || rect.top;
+        dragging = true; moved = false;
+        floatingBtn.setPointerCapture(e.pointerId);
+      }
+      function onPointerMove(e) {
+        if(!dragging) return;
+        e.preventDefault();
+        const dx = e.clientX - startX, dy = e.clientY - startY;
+        if(!moved && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) moved = true;
+        if(moved) {
+          floatingBtn.style.left = (startLeft + dx) + 'px';
+          floatingBtn.style.top = (startTop + dy) + 'px';
+          floatingBtn.style.right = 'auto';
+          floatingBtn.style.bottom = 'auto';
+        }
+      }
+      function onPointerUp(e) {
+        if(!dragging) return;
+        dragging = false;
+        floatingBtn.releasePointerCapture(e.pointerId);
+        if(!moved) {
+          const calcVisible = window.getComputedStyle(calcContent).display !== 'none';
+          if(calcVisible) {
+            calcContent.style.display = 'none';
+            gamePanel.style.display = 'flex';
+            calcToolbar.style.opacity = '0';
+            modeIndicators.style.opacity = '0';
+            floatingBtn.textContent = '🧮';
+            renderGameUI();
+            if(gameInstance && gameState === 'playing') gameInstance.forceStart();
+          } else {
+            calcContent.style.display = 'flex';
+            gamePanel.style.display = 'none';
+            calcToolbar.style.opacity = '1';
+            modeIndicators.style.opacity = '1';
+            floatingBtn.textContent = '🎮';
+            if(gameInstance) gameInstance.stopLoop();
+          }
+          sideMenu.classList.remove('open');
+        }
+      }
+      floatingBtn.addEventListener('pointerdown', onPointerDown);
+      floatingBtn.addEventListener('pointermove', onPointerMove);
+      floatingBtn.addEventListener('pointerup', onPointerUp);
+      floatingBtn.addEventListener('pointercancel', onPointerUp);
+
+      menuToggle.onclick = () => sideMenu.classList.toggle('open');
+
+      document.querySelectorAll('.menu-item').forEach(item => item.addEventListener('click', () => {
+        const mode = item.dataset.mode;
+        if(mode === 'scientific') currentMode = 'basic';
+        else if(mode === 'converter') currentMode = 'converter';
+        else if(mode === 'programmer') { currentMode = 'programmer'; baseMode = 'DEC'; }
+        else if(mode === 'graph') document.getElementById('graphModal').classList.remove('hidden');
+        else if(mode === 'derivative') document.getElementById('derivativeModal').classList.remove('hidden');
+        else if(mode === 'integral') document.getElementById('integralModal').classList.remove('hidden');
+        else if(mode === 'settings') settingsModal.classList.remove('hidden');
+        else if(mode === 'about') document.getElementById('aboutModal').classList.remove('hidden');
+        else if(mode === 'manual') document.getElementById('manualModal').classList.remove('hidden');
+        else if(mode === 'formulas') alert('Bhaskara: x=(-b±√(b²-4ac))/(2a)\nÁrea círculo: πr²\nVolume esfera: 4/3πr³');
+        else if(mode === 'history') document.querySelector('.history-panel')?.scrollIntoView({behavior:'smooth'});
+        renderCalculator(); sideMenu.classList.remove('open'); updateDisplay();
+      }));
+
+      document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if(e.target === m) m.classList.add('hidden'); }));
+      document.getElementById('closeAboutModal').onclick = () => document.getElementById('aboutModal').classList.add('hidden');
+      document.getElementById('closeManualModal').onclick = () => document.getElementById('manualModal').classList.add('hidden');
+      document.getElementById('closeGraphModal').onclick = () => document.getElementById('graphModal').classList.add('hidden');
+      document.getElementById('closeDerivModal').onclick = () => document.getElementById('derivativeModal').classList.add('hidden');
+      document.getElementById('closeIntegralModal').onclick = () => document.getElementById('integralModal').classList.add('hidden');
+
+      shiftBtn.onclick = () => { shiftActive=!shiftActive; alphaActive=secondActive=false; updateShiftUI(); renderCalculator(); };
+      alphaBtn.onclick = () => { alphaActive=!alphaActive; shiftActive=secondActive=false; updateShiftUI(); renderCalculator(); };
+      secondBtn.onclick = () => { secondActive=!secondActive; shiftActive=alphaActive=false; updateShiftUI(); renderCalculator(); };
+      modeBtn.onclick = () => { angleUnit = angleUnit==='deg'?'rad':'deg'; updateDisplay(); };
+      function updateShiftUI() {
+        shiftBtn.classList.toggle('active', shiftActive);
+        alphaBtn.classList.toggle('active', alphaActive);
+        secondBtn.classList.toggle('active', secondActive);
+      }
+
+      let chartInst;
+      document.getElementById('plotGraphBtn').onclick = () => {
+        const fn = document.getElementById('graphInput').value;
+        try {
+          const compiled = math.compile(fn); const labels=[], data=[];
+          for(let x=-5; x<=5; x+=0.1) { labels.push(x.toFixed(1)); data.push(compiled.evaluate({x})); }
+          if(chartInst) chartInst.destroy();
+          chartInst = new Chart(document.getElementById('graphCanvas'), { type:'line', data:{labels, datasets:[{label:fn,data,borderColor:'#4a6fa5'}]} });
+        } catch(e) { alert('Função inválida'); }
+      };
+
+      document.getElementById('computeDeriv').onclick = () => {
+        const fn = document.getElementById('derivFunc').value, x0 = parseFloat(document.getElementById('derivPoint').value);
+        try {
+          const compiled = math.compile(fn); const f = x => compiled.evaluate({x}); const h = 1e-5;
+          document.getElementById('derivResult').textContent = ((f(x0+h)-f(x0-h))/(2*h)).toFixed(8);
+        } catch(e) { document.getElementById('derivResult').textContent = 'Erro'; }
+      };
+
+      document.getElementById('computeIntegral').onclick = () => {
+        const fn = document.getElementById('integralFunc').value, b = parseFloat(document.getElementById('integralLimit').value);
+        try {
+          const compiled = math.compile(fn); const f = x => compiled.evaluate({x}); const n=100, dx=b/n;
+          let sum = f(0) + f(b); for(let i=1; i<n; i++) sum += (i%2===0?2:4)*f(i*dx);
+          document.getElementById('integralResult').textContent = (dx/3*sum).toFixed(8);
+        } catch(e) { document.getElementById('integralResult').textContent = 'Erro'; }
+      };
+
+      renderCalculator(); updateDisplay(); initGame(); renderGameUI();
+    }
+
+    // ========== CALCULADORA ==========
+    function getFunctionLabel(base) {
+      if(shiftActive) {
+        const m={'sin':'sin⁻¹','cos':'cos⁻¹','tan':'tan⁻¹','log':'10ˣ','ln':'eˣ','x²':'√','√':'x²','x³':'∛','∛':'x³','x⁻¹':'x!','nPr':'nCr','nCr':'nPr','!':'!!','|x|':'sign','mod':'div','π':'τ','e':'c','xʸ':'ʸ√x','STO':'RCL','RCL':'STO','CONST':'CONV','Pol':'Rec','Ran#':'RanInt'};
+        return m[base]||base;
+      }
+      if(alphaActive) {
+        const m={'sin':'sinh','cos':'cosh','tan':'tanh','sin⁻¹':'sinh⁻¹','cos⁻¹':'cosh⁻¹','tan⁻¹':'tanh⁻¹','log':'ln','ln':'log','x²':'x³','√':'∛','π':'e','e':'π'};
+        return m[base]||base;
+      }
+      if(secondActive) {
+        const m={'sin':'asin','cos':'acos','tan':'atan','sinh':'asinh','cosh':'acosh','tanh':'atanh','log':'2ˣ','ln':'log₂','x²':'xʸ','√':'ʸ√x','nPr':'nCr','nCr':'nPr','!':'Γ','|x|':'norm','mod':'rem','π':'φ','e':'γ'};
+        return m[base]||base;
+      }
+      return base;
+    }
+
+    function renderCalculator() {
+      if(!dynamicArea) return;
+      dynamicArea.innerHTML = '';
+      
+      const editBar = document.createElement('div');
+      editBar.style.display = 'flex';
+      editBar.style.gap = '6px';
+      editBar.style.marginBottom = '10px';
+      editBar.innerHTML = `
+        <button class="func-btn" style="flex:1;" id="cursorLeftBtn">←</button>
+        <button class="func-btn" style="flex:1;" id="cursorRightBtn">→</button>
+        <button class="func-btn" style="flex:1;" id="delCharBtn">DEL</button>
+        <button class="func-btn" style="flex:1;" id="clearAllBtn">CLR</button>
+      `;
+      dynamicArea.appendChild(editBar);
+      document.getElementById('cursorLeftBtn').onclick = () => { exprInput.focus(); moveCursor(-1); };
+      document.getElementById('cursorRightBtn').onclick = () => { exprInput.focus(); moveCursor(1); };
+      document.getElementById('delCharBtn').onclick = () => { deleteChar(); };
+      document.getElementById('clearAllBtn').onclick = () => { exprInput.value = ''; exprStr = ''; currentVal = '0'; updateDisplay(); };
+      
+      let funcRows = [], keypad = [];
+      if(currentMode === 'basic' || currentMode === 'scientific') {
+        funcRows = [
+          ['d/dx','∫dx','x⁻¹','log','ln'],
+          ['sin','cos','tan','sin⁻¹','cos⁻¹'],
+          ['sinh','cosh','tanh','nPr','nCr'],
+          ['x²','x³','xʸ','√','∛'],
+          ['!','|x|','mod','π','e'],
+          ['STO','RCL','ENG','CONST','CONV'],
+          ['Pol','Rec','Ran#','PreAns','Ans'],
+          ['MC','MR','M+','M-','MS']
+        ].map(r => r.map(f => getFunctionLabel(f)));
+        keypad = [
+          ['AC','( )','%','÷'],
+          ['7','8','9','×'],
+          ['4','5','6','−'],
+          ['1','2','3','+'],
+          ['0','.','Exp','=']
+        ];
+      } else if(currentMode === 'converter') {
+        funcRows = [
+          ['m→ft','ft→m','kg→lb','lb→kg','°C→°F'],
+          ['°F→°C','km→mi','mi→km','cm→in','in→cm'],
+          ['L→gal','gal→L','USD→EUR','EUR→USD','BRL→USD']
+        ];
+        keypad = [['AC','( )','%','÷'],['7','8','9','×'],['4','5','6','−'],['1','2','3','+'],['0','.','Ans','=']];
+      } else if(currentMode === 'programmer') {
+        funcRows = [
+          ['HEX','DEC','OCT','BIN',''],
+          ['AND','OR','XOR','NOT','<<'],
+          ['>>','A','B','C','D'],
+          ['E','F','RoL','RoR','']
+        ];
+        keypad = [['AC','( )','%','÷'],['7','8','9','×'],['4','5','6','−'],['1','2','3','+'],['0','.','Ans','=']];
+      }
+      
+      const fc = document.createElement('div'); fc.className = 'func-rows';
+      funcRows.forEach(r => {
+        const rd = document.createElement('div'); rd.className = 'func-row';
+        r.filter(f=>f).forEach(f => { const b = document.createElement('button'); b.className = 'func-btn'; b.textContent = f; b.onclick = () => handleInput(f); rd.appendChild(b); });
+        fc.appendChild(rd);
+      });
+      dynamicArea.appendChild(fc);
+      
+      const kp = document.createElement('div'); kp.className = 'keypad';
+      keypad.flat().forEach(k => {
+        if(!k) return;
+        const b = document.createElement('button'); b.className = 'key-btn';
+        if(['÷','×','−','+','='].includes(k)) b.classList.add('operator');
+        if(k==='=') b.classList.add('equal');
+        b.textContent = k; b.onclick = () => handleInput(k);
+        kp.appendChild(b);
+      });
+      dynamicArea.appendChild(kp);
+      
+      const histDiv = document.createElement('div'); histDiv.className = 'history-panel';
+      histDiv.innerHTML = `<div class="history-header"><span>Histórico</span><span class="clear-history" id="clearHistoryBtn">🗑️</span></div><div id="historyList"></div>`;
+      dynamicArea.appendChild(histDiv);
+      document.getElementById('clearHistoryBtn').onclick = () => { history = []; renderHistory(); };
+      renderHistory();
+    }
+
+    function moveCursor(dir) {
+      if(!exprInput) return;
+      exprInput.focus();
+      const pos = exprInput.selectionStart;
+      const newPos = Math.max(0, Math.min(exprInput.value.length, pos + dir));
+      exprInput.setSelectionRange(newPos, newPos);
+    }
+
+    function deleteChar() {
+      if(!exprInput) return;
+      exprInput.focus();
+      const start = exprInput.selectionStart;
+      const end = exprInput.selectionEnd;
+      let val = exprInput.value;
+      if(start !== end) {
+        val = val.slice(0, start) + val.slice(end);
+        exprInput.value = val;
+        exprInput.setSelectionRange(start, start);
+      } else if(start > 0) {
+        val = val.slice(0, start-1) + val.slice(start);
+        exprInput.value = val;
+        exprInput.setSelectionRange(start-1, start-1);
+      }
+      exprStr = exprInput.value;
+    }
+
+    function addHistory(expr, res) { history.unshift({expr,res}); if(history.length>20) history.pop(); renderHistory(); }
+    function renderHistory() { 
+      const hl = document.getElementById('historyList'); 
+      if(!hl) return;
+      hl.innerHTML = history.map(h => 
+        `<div class="history-item" data-expr="${encodeURIComponent(h.expr)}">${h.expr} = ${h.res}</div>`
+      ).join('');
+      hl.querySelectorAll('.history-item').forEach(el => {
+        el.addEventListener('click', function() {
+          const expr = decodeURIComponent(this.dataset.expr);
+          if(exprInput) {
+            exprInput.value = expr;
+            exprStr = expr;
+            updateDisplay();
+            sideMenu.classList.remove('open');
+          }
+        });
+      });
+    }
+
+    function evaluateExpression(expr) { 
+      try { 
+        return math.evaluate(expr.replace(/÷/g,'/').replace(/×/g,'*').replace(/−/g,'-').replace(/%/g,'/100').replace(/xʸ/g,'^')).toString(); 
+      } catch(e) { 
+        return null; 
+      } 
+    }
+
+    function insertAtCursor(text) {
+      if(!exprInput) return;
+      exprInput.focus();
+      const start = exprInput.selectionStart;
+      const end = exprInput.selectionEnd;
+      const val = exprInput.value;
+      exprInput.value = val.slice(0, start) + text + val.slice(end);
+      exprInput.setSelectionRange(start + text.length, start + text.length);
+      exprStr = exprInput.value;
+    }
+
+    // ========== HANDLE INPUT COMPLETO ==========
+    function handleInput(key) {
+      vibrate(5);
+      
+      // --- MEMÓRIA ---
+      if(key==='MC') { memory=0; updateDisplay(); return; }
+      if(key==='MR') { insertAtCursor(memory.toString()); return; }
+      if(key==='M+') { const v = parseFloat(currentVal); if(!isNaN(v)) memory += v; updateDisplay(); return; }
+      if(key==='M-') { const v = parseFloat(currentVal); if(!isNaN(v)) memory -= v; updateDisplay(); return; }
+      if(key==='MS') { const v = parseFloat(currentVal); if(!isNaN(v)) memory = v; updateDisplay(); return; }
+      
+      // --- CONVERSOR ---
+      const conversions = {
+        'm→ft': v => v * 3.28084, 'ft→m': v => v / 3.28084,
+        'kg→lb': v => v * 2.20462, 'lb→kg': v => v / 2.20462,
+        '°C→°F': v => v * 9/5 + 32, '°F→°C': v => (v - 32) * 5/9,
+        'km→mi': v => v * 0.621371, 'mi→km': v => v / 0.621371,
+        'cm→in': v => v * 0.393701, 'in→cm': v => v / 0.393701,
+        'L→gal': v => v * 0.264172, 'gal→L': v => v / 0.264172,
+        'USD→EUR': v => v * 0.92, 'EUR→USD': v => v / 0.92,
+        'BRL→USD': v => v * 0.19, 'USD→BRL': v => v / 0.19
+      };
+      if(conversions.hasOwnProperty(key)) {
+        const val = parseFloat(currentVal);
+        if(isNaN(val)) { currentVal = 'Erro'; resultInput.value = 'Erro'; updateDisplay(); return; }
+        const converted = conversions[key](val);
+        currentVal = converted.toFixed(6).replace(/\.?0+$/, '');
+        lastResult = currentVal;
+        addHistory(`${val} ${key}`, currentVal);
+        resultInput.value = currentVal;
+        updateDisplay();
+        return;
+      }
+      
+      // --- PROGRAMADOR ---
+      if(['HEX','DEC','OCT','BIN'].includes(key)) {
+        baseMode = key;
+        baseBadge.textContent = baseMode;
+        try {
+          const num = parseInt(currentVal, {'HEX':16,'DEC':10,'OCT':8,'BIN':2}[baseMode] || 10);
+          if(!isNaN(num)) currentVal = num.toString({'HEX':16,'DEC':10,'OCT':8,'BIN':2}[baseMode] || 10).toUpperCase();
+        } catch(e) { currentVal = '0'; }
+        updateDisplay();
+        return;
+      }
+      const bitwiseOps = {'AND':'&','OR':'|','XOR':'^','NOT':'~','<<':'<<','>>':'>>'};
+      if(bitwiseOps.hasOwnProperty(key)) {
+        insertAtCursor(' ' + bitwiseOps[key] + ' ');
+        return;
+      }
+      
+      // --- FUNÇÕES ESPECIAIS ---
+      if(key==='( )') { insertAtCursor('()'); exprInput.setSelectionRange(exprInput.selectionStart-1, exprInput.selectionStart-1); return; }
+      if(key==='Ans') { insertAtCursor(lastResult); return; }
+      if(key==='PreAns') { insertAtCursor(lastResult); return; }
+      if(key==='STO') { memory = parseFloat(currentVal)||0; return; }
+      if(key==='RCL') { insertAtCursor(memory.toString()); return; }
+      if(key==='ENG') { let v=parseFloat(currentVal); if(!isNaN(v)) currentVal=v.toExponential(3); updateDisplay(); return; }
+      if(key==='CONST') { alert('Constantes: c=299792458, g=9.80665, etc.'); return; }
+      if(key==='CONV') { currentMode='converter'; renderCalculator(); return; }
+      if(key==='Pol') { alert('Pol(x,y) -> r,θ'); return; }
+      if(key==='Rec') { alert('Rec(r,θ) -> x,y'); return; }
+      if(key==='Ran#') { insertAtCursor(Math.random().toFixed(4)); return; }
+      if(key==='RanInt') { insertAtCursor(Math.floor(Math.random()*100).toString()); return; }
+      if(key==='d/dx') { document.getElementById('derivativeModal').classList.remove('hidden'); return; }
+      if(key==='∫dx') { document.getElementById('integralModal').classList.remove('hidden'); return; }
+      
+      // --- MAPEAMENTO DE FUNÇÕES MATEMÁTICAS ---
+      const funcMap = {
+        'sin': 'sin(', 'cos': 'cos(', 'tan': 'tan(', 'sinh': 'sinh(', 'cosh': 'cosh(', 'tanh': 'tanh(',
+        'sin⁻¹': 'asin(', 'cos⁻¹': 'acos(', 'tan⁻¹': 'atan(', 'sinh⁻¹': 'asinh(', 'cosh⁻¹': 'acosh(', 'tanh⁻¹': 'atanh(',
+        'log': 'log(', 'ln': 'ln(', '10ˣ': '10^', 'eˣ': 'e^', 'x²': '^2', 'x³': '^3', '√': 'sqrt(', '∛': 'cbrt(',
+        'x⁻¹': '^(-1)', 'xʸ': '^', 'ʸ√x': 'nthRoot(', 'π': 'pi', 'e': 'e', '|x|': 'abs(', '!': '!',
+        'nPr': 'permutations(', 'nCr': 'combinations(', 'GCD': 'gcd(', 'LCM': 'lcm(', 'mod': ' mod ',
+        'Γ': 'gamma(', 'norm': 'norm(', 'φ': 'phi', 'γ': 'eulergamma'
+      };
+      if(funcMap.hasOwnProperty(key)) {
+        insertAtCursor(funcMap[key]);
+        return;
+      }
+      
+      // --- NÚMEROS E OPERADORES BÁSICOS ---
+      if(key.match(/^[0-9.()%÷×−+^]$/)) {
+        if(key === '÷') insertAtCursor('/');
+        else if(key === '×') insertAtCursor('*');
+        else if(key === '−') insertAtCursor('-');
+        else if(key === '^') insertAtCursor('^');
+        else insertAtCursor(key);
+        updateDisplay();
+        return;
+      }
+      
+      if(key==='AC') { exprInput.value = ''; currentVal='0'; exprStr=''; shouldReset=false; updateDisplay(); return; }
+      if(key==='Exp') { insertAtCursor('E'); return; }
+      
+      if(key==='=') {
+        const expr = exprInput.value;
+        const res = evaluateExpression(expr);
+        if(res!==null) {
+          currentVal = res; lastResult = currentVal;
+          addHistory(expr, currentVal);
+          resultInput.value = currentVal;
+        } else { currentVal = 'Erro'; resultInput.value = 'Erro'; }
+        updateDisplay();
+        return;
+      }
+      updateDisplay();
+    }
+
+    function updateDisplay() {
+      if(resultInput) resultInput.value = currentVal;
+      if(exprInput) { exprStr = exprInput.value; }
+      if(angleBadge) angleBadge.textContent = angleUnit==='deg'?'DEG':'RAD';
+      if(baseBadge) baseBadge.textContent = baseMode;
+      if(pendingIndicator) pendingIndicator.textContent = '';
+    }
+
+    // ========== JOGO (mantido igual) ==========
+    function initGame() {
+      const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d');
+      const CW = 400, CH = 600;
+      const CONFIG = { GRAVITY:0.68, JUMP_FORCE:-12.0, SPEED:10.2, PLATFORM_WIDTH:80, PLATFORM_HEIGHT:14, PLAYER_RADIUS:18 };
+      
+      let powerups = [], enemies = [], lives = 3, shieldActive = false, shieldTimer = 0;
+      let nextPlatformId = 1, animTime = 0, jumpSquash = 0;
+      let gameStartTime = 0;
+      let enemiesEnabled = false, powerupsEnabled = false;
+      let globalHighScore = 0;
+      try { const saved = localStorage.getItem('hyper_doodle_hs'); if(saved) globalHighScore = parseInt(saved,10)||0; } catch(e){}
+      highScoreSpan.textContent = globalHighScore;
+      
+      gameInstance = {
+        active: false, over: false,
+        player: { x:200, y:320, vx:0, vy:0, r:CONFIG.PLAYER_RADIUS },
+        platforms: [], score:0, highScore: globalHighScore, cameraY:0, lastHeight:0, particles: [],
+        leftPressed: false, rightPressed: false, loopId: null,
+        
+        forceStart(){ if(!this.active||this.over) this.reset(); this.stopLoop(); this.loopId = requestAnimationFrame(gameLoop); this.active = true; },
+        stopLoop(){ if(this.loopId) cancelAnimationFrame(this.loopId); this.loopId = null; },
+        reset(){
+          this.active = true; this.over = false;
+          this.player = { x:200, y:320, vx:0, vy:0, r:CONFIG.PLAYER_RADIUS };
+          this.cameraY = 0; this.score = 0; this.lastHeight = 0;
+          this.particles = []; powerups = []; enemies = [];
+          lives = 3; shieldActive = false; shieldTimer = 0;
+          gameStartTime = Date.now();
+          enemiesEnabled = false; powerupsEnabled = false;
+          this.initPlatforms();
+          this.updateScoreUI(0);
+          this.updateLivesUI();
+          vibrate(5);
+          this.draw();
+        },
+        initPlatforms(){
+          nextPlatformId = 1;
+          this.platforms = [{ id:nextPlatformId++, x:155, y:380, w:CONFIG.PLATFORM_WIDTH, scored:false }];
+          for(let i=1; i<7; i++) this.platforms.push({ id:nextPlatformId++, x:30+Math.random()*(CW-CONFIG.PLATFORM_WIDTH-30), y:180+i*80, w:CONFIG.PLATFORM_WIDTH, scored:false });
+          this.player.y = 380 - this.player.r;
+        },
+        spawnPowerup(){
+          if(!powerupsEnabled) return;
+          const p = this.platforms[Math.floor(Math.random() * this.platforms.length)];
+          if(!p) return;
+          if(Math.random() < 0.12) {
+            powerups.push({ x: p.x + p.w/2 - 12, y: p.y - 35, w: 24, h: 24, collected: false, type: 'shield' });
+          }
+        },
+        spawnEnemy(platform){
+          if(!enemiesEnabled) return;
+          if(!platform) return;
+          const type = Math.random() > 0.5 ? '👾' : '👹';
+          enemies.push({ x: platform.x + platform.w/2 - 15, y: platform.y - 45, vx: (Math.random()-0.5)*2, vy:0, w:30, h:30, type, active:true, platformId: platform.id });
+        },
+        updateScoreUI(n){ 
+          this.score = n; 
+          gameScoreSpan.textContent = Math.floor(n); 
+          if(this.score > this.highScore){ 
+            this.highScore = Math.floor(this.score); 
+            highScoreSpan.textContent = this.highScore; 
+            try{ localStorage.setItem('hyper_doodle_hs', this.highScore); }catch(e){} 
+          }
+        },
+        updateLivesUI(){ livesDisplay.textContent = lives; },
+        maintainPlatforms(){
+          this.platforms = this.platforms.filter(p => p.y - this.cameraY < CH + 150);
+          if(!this.platforms.length) this.platforms.push({ id:nextPlatformId++, x:CW/2-CONFIG.PLATFORM_WIDTH/2, y:this.cameraY+CH-50, w:CONFIG.PLATFORM_WIDTH, scored:false });
+          const top = this.cameraY - 150;
+          let minY = this.platforms.length ? Math.min(...this.platforms.map(p => p.y)) : this.cameraY;
+          while(minY > top){
+            minY -= 65 + Math.random() * 55;
+            const newPlat = { id:nextPlatformId++, x:20+Math.random()*(CW-CONFIG.PLATFORM_WIDTH-40), y:minY, w:CONFIG.PLATFORM_WIDTH, scored:false };
+            this.platforms.push(newPlat);
+            if(enemiesEnabled && Math.random() < 0.2) this.spawnEnemy(newPlat);
+            this.spawnPowerup();
+          }
+        },
+        addParticle(color, size=5){ this.particles.push({ x:this.player.x, y:this.player.y-this.cameraY, vx:(Math.random()-0.5)*2, vy:Math.random()*2, life:1.0, color, size }); },
+        updateParticles(){ for(let i=this.particles.length-1; i>=0; i--){ const p = this.particles[i]; p.x += p.vx; p.y += p.vy; p.vy += 0.1; p.life -= 0.02; if(p.life <= 0 || p.y > CH+50) this.particles.splice(i,1); } },
+        physics(){
+          if(!this.active || this.over) return;
+          const world = WORLDS[currentEmoji] || WORLDS['😊'];
+          
+          const elapsed = (Date.now() - gameStartTime) / 1000;
+          if(!enemiesEnabled && elapsed >= 25) enemiesEnabled = true;
+          if(!powerupsEnabled && elapsed >= 30) powerupsEnabled = true;
+          
+          if(this.leftPressed) this.player.vx = -CONFIG.SPEED; else if(this.rightPressed) this.player.vx = CONFIG.SPEED; else this.player.vx *= 0.7;
+          this.player.x += this.player.vx;
+          if(this.player.x - this.player.r > CW) this.player.x = -this.player.r;
+          if(this.player.x + this.player.r < 0) this.player.x = CW + this.player.r;
+          this.player.vy += CONFIG.GRAVITY; this.player.y += this.player.vy;
+          
+          if(world.snow && Math.random() < 0.3) this.addParticle('#ffffff', 3);
+          if(world.fire && Math.random() < 0.2) this.addParticle('#ff8800', 6);
+          
+          if(shieldActive) { shieldTimer--; if(shieldTimer <= 0) shieldActive = false; }
+          
+          for(let pu of powerups) {
+            if(pu.collected) continue;
+            const py = pu.y - this.cameraY;
+            if(py > CH || py + pu.h < 0) continue;
+            const playerScreenY = this.player.y - this.cameraY;
+            if(Math.abs(this.player.x - (pu.x + pu.w/2)) < this.player.r + pu.w/2 && Math.abs(playerScreenY - (py + pu.h/2)) < this.player.r + pu.h/2) {
+              pu.collected = true;
+              if(pu.type === 'shield') { shieldActive = true; shieldTimer = 200; }
+              playSound('powerup');
+              for(let i=0; i<10; i++) this.addParticle('#FFD700', 4);
+            }
+          }
+          powerups = powerups.filter(pu => !pu.collected || pu.y - this.cameraY < CH + 50);
+          
+          for(let e of enemies) {
+            if(!e.active) continue;
+            e.x += e.vx; e.y += e.vy; e.vy += CONFIG.GRAVITY * 0.5;
+            if(e.x < 0) { e.x = 0; e.vx *= -1; }
+            if(e.x + e.w > CW) { e.x = CW - e.w; e.vx *= -1; }
+            for(let p of this.platforms) {
+              const bottom = e.y + e.h;
+              if(bottom >= p.y && bottom <= p.y + CONFIG.PLATFORM_HEIGHT + 10 && e.x + e.w > p.x && e.x < p.x + p.w) {
+                e.y = p.y - e.h; e.vy = CONFIG.JUMP_FORCE * 0.8;
+              }
+            }
+            if(e.y - this.cameraY > CH + 100) e.active = false;
+            
+            const playerRect = { x: this.player.x - this.player.r, y: this.player.y - this.player.r, w: this.player.r*2, h: this.player.r*2 };
+            const enemyRect = { x: e.x, y: e.y, w: e.w, h: e.h };
+            if(rectCollide(playerRect, enemyRect)) {
+              if(this.player.vy >= 0 && this.player.y + this.player.r < e.y + e.h/2) {
+                e.active = false; this.score += 5; this.updateScoreUI(this.score);
+                this.player.vy = CONFIG.JUMP_FORCE * 0.7; playSound('powerup');
+                for(let i=0; i<8; i++) this.addParticle('#FF4444', 4);
+              } else {
+                if(!shieldActive) {
+                  lives--; this.updateLivesUI();
+                  if(lives <= 0) { this.gameOver(); return; }
+                  else { this.player.y = this.cameraY + CH * 0.5; this.player.vy = 0; e.active = false; playSound('gameover'); }
+                } else { e.active = false; }
+              }
+            }
+          }
+          enemies = enemies.filter(e => e.active);
+          
+          if(this.player.vy >= 0) {
+            for(let p of this.platforms) {
+              const bottom = this.player.y + this.player.r;
+              if(bottom >= p.y && bottom <= p.y + CONFIG.PLATFORM_HEIGHT + 10 && this.player.x + this.player.r > p.x && this.player.x - this.player.r < p.x + p.w) {
+                this.player.vy = CONFIG.JUMP_FORCE; this.player.y = p.y - this.player.r;
+                jumpSquash = 10; playCharacterSound(currentEmoji);
+                if(!p.scored) { p.scored = true; this.score += 2; this.updateScoreUI(this.score); vibrate(8); }
+                break;
+              }
+            }
+          }
+          
+          const targetCam = this.player.y - CH * 0.38;
+          if(targetCam < this.cameraY) { this.cameraY = targetCam; const bonus = Math.max(0, Math.floor(-this.cameraY/7))*2; if(bonus > this.lastHeight) { this.updateScoreUI(Math.max(this.score, bonus)); this.lastHeight = bonus; } }
+          if(this.cameraY > 0) this.cameraY = 0;
+          this.maintainPlatforms(); this.updateParticles();
+          if(this.player.y - this.cameraY > CH + 100) { this.gameOver(); return; }
+          if(jumpSquash > 0) jumpSquash -= 0.5;
+          animTime += 1;
+        },
+        gameOver(){
+          if(this.over) return;
+          this.over = true; this.active = false;
+          playSound('gameover'); vibrate(30);
+          gameState = 'gameover'; renderGameUI(); this.stopLoop();
+        },
+        attemptJump(){
+          if(!this.active || this.over) return;
+          for(let p of this.platforms) {
+            const bottom = this.player.y + this.player.r;
+            if(bottom >= p.y-3 && bottom <= p.y + CONFIG.PLATFORM_HEIGHT+3 && this.player.x + this.player.r > p.x && this.player.x - this.player.r < p.x + p.w) {
+              this.player.vy = CONFIG.JUMP_FORCE; jumpSquash = 10; playCharacterSound(currentEmoji); vibrate(5); break;
+            }
+          }
+        },
+        draw(){
+          ctx.clearRect(0,0,CW,CH);
+          const world = WORLDS[currentEmoji] || WORLDS['😊'];
+          const grad = ctx.createLinearGradient(0,0,0,CH);
+          grad.addColorStop(0, world.bgTop); grad.addColorStop(1, world.bgBottom);
+          ctx.fillStyle = grad; ctx.fillRect(0,0,CW,CH);
+          
+          if(world.stars) { ctx.fillStyle='white'; for(let i=0;i<30;i++){ ctx.beginPath(); ctx.arc((i*23+this.cameraY*0.05)%CW,(i*17)%CH,1.5,0,Math.PI*2); ctx.fill(); } }
+          
+          ctx.shadowBlur=15; ctx.shadowColor='#FFD700';
+          for(let pu of powerups) { if(pu.collected) continue; const py=pu.y-this.cameraY; if(py+pu.h<0||py>CH) continue; ctx.fillStyle=pu.type==='shield'?'#4aa0ff':'#FFD700'; ctx.beginPath(); ctx.arc(pu.x+pu.w/2, py+pu.h/2, pu.w/2, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur=20; ctx.beginPath(); ctx.arc(pu.x+pu.w/2, py+pu.h/2, pu.w/3, 0, Math.PI*2); ctx.fillStyle='#FFFFA0'; ctx.fill(); }
+          ctx.shadowBlur=0;
+          
+          ctx.shadowBlur=8; ctx.shadowColor='#aaa';
+          this.particles.forEach(p=>{ ctx.globalAlpha=p.life*0.7; ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(p.x,p.y,p.size||4,0,Math.PI*2); ctx.fill(); });
+          ctx.globalAlpha=1.0; ctx.shadowBlur=0;
+          
+          ctx.shadowColor='#2a3a5a'; ctx.shadowBlur=10; ctx.shadowOffsetY=3;
+          this.platforms.forEach(p=>{ const sy=p.y-this.cameraY; if(sy+CONFIG.PLATFORM_HEIGHT<0||sy>CH) return; ctx.fillStyle='#4a6fa5'; ctx.beginPath(); ctx.roundRect(p.x,sy,p.w,CONFIG.PLATFORM_HEIGHT,10); ctx.fill(); });
+          
+          for(let e of enemies) { const ey=e.y-this.cameraY; if(ey+e.h<0||ey>CH) continue; ctx.font=`${e.h}px "Segoe UI Emoji"`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(e.type, e.x+e.w/2, ey+e.h/2); }
+          
+          const py = this.player.y - this.cameraY;
+          let drawX = this.player.x, drawY = py, rotation = this.player.vx * 0.03, scale = 1.0;
+          let scaleY = scale, scaleX = scale;
+          if(jumpSquash > 0) { scaleY = scale * (1 - jumpSquash/50); scaleX = scale * (1 + jumpSquash/30); }
+          ctx.shadowBlur=20; ctx.shadowColor='rgba(0,0,0,0.5)'; ctx.shadowOffsetY=3;
+          if(shieldActive) { ctx.beginPath(); ctx.arc(drawX, drawY, this.player.r+5, 0, Math.PI*2); ctx.strokeStyle='#4aa0ff'; ctx.lineWidth=4; ctx.shadowBlur=30; ctx.shadowColor='#4aa0ff'; ctx.stroke(); }
+          ctx.save(); ctx.translate(drawX, drawY); ctx.rotate(rotation); ctx.scale(scaleX, scaleY);
+          ctx.font = `${this.player.r*2}px "Segoe UI Emoji"`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(currentEmoji, 0, 0);
+          ctx.restore();
+          
+          if(this.over) {
+            ctx.font = 'bold 32px "Inter", sans-serif';
+            ctx.fillStyle = '#c0c0d0';
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#4a6fa5';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('💀 GAME OVER', CW/2, CH/2);
+          }
+        }
+      };
+      
+      function rectCollide(r1, r2) { return r1.x < r2.x + r2.w && r1.x + r1.w > r2.x && r1.y < r2.y + r2.h && r1.y + r1.h > r2.y; }
+      CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){ if(w<2*r) r=w/2; if(h<2*r) r=h/2; this.moveTo(x+r,y); this.lineTo(x+w-r,y); this.quadraticCurveTo(x+w,y,x+w,y+r); this.lineTo(x+w,y+h-r); this.quadraticCurveTo(x+w,y+h,x+w-r,y+h); this.lineTo(x+r,y+h); this.quadraticCurveTo(x,y+h,x,y+h-r); this.lineTo(x,y+r); this.quadraticCurveTo(x,y,x+r,y); return this; };
+      
+      function gameLoop(){ if(gameInstance.active) { gameInstance.physics(); gameInstance.draw(); } gameInstance.loopId = requestAnimationFrame(gameLoop); }
+      
+      window.addEventListener('keydown', e => { if(!gameInstance.active) return; if(e.key==='ArrowLeft'){ e.preventDefault(); gameInstance.leftPressed=true; } if(e.key==='ArrowRight'){ e.preventDefault(); gameInstance.rightPressed=true; } if(e.key===' '){ e.preventDefault(); gameInstance.attemptJump(); } });
+      window.addEventListener('keyup', e => { if(e.key==='ArrowLeft') gameInstance.leftPressed=false; if(e.key==='ArrowRight') gameInstance.rightPressed=false; });
+    }
+
+    function renderGameUI() {
+      if(!gameUI) return;
+      gameUI.innerHTML = '';
+      if(gameState === 'start') {
+        const strip = document.createElement('div'); strip.className = 'character-strip';
+        CHARACTERS.forEach(e => { const b = document.createElement('button'); b.className = 'char-option' + (e===currentEmoji?' selected':''); b.textContent = e; b.onclick = () => { document.querySelectorAll('.char-option').forEach(bt => bt.classList.remove('selected')); b.classList.add('selected'); currentEmoji = e; }; strip.appendChild(b); });
+        gameUI.appendChild(strip);
+        const start = document.createElement('button'); start.className = 'start-btn'; start.textContent = '▶ START GAME'; start.onclick = () => { gameState = 'playing'; gameInstance.reset(); gameInstance.forceStart(); renderGameUI(); };
+        gameUI.appendChild(start);
+      } else if(gameState === 'playing') {
+        const ctrl = document.createElement('div'); ctrl.className = 'game-controls';
+        ctrl.innerHTML = '<button class="game-ctrl-btn" id="moveLeftBtn">←</button><button class="game-ctrl-btn" id="moveRightBtn">→</button>';
+        gameUI.appendChild(ctrl);
+        setTimeout(() => {
+          const l = document.getElementById('moveLeftBtn'), r = document.getElementById('moveRightBtn');
+          if(l) { l.addEventListener('mousedown', e => { e.preventDefault(); gameInstance.leftPressed = true; }); l.addEventListener('mouseup', () => gameInstance.leftPressed = false); l.addEventListener('touchstart', e => { e.preventDefault(); gameInstance.leftPressed = true; }); l.addEventListener('touchend', () => gameInstance.leftPressed = false); }
+          if(r) { r.addEventListener('mousedown', e => { e.preventDefault(); gameInstance.rightPressed = true; }); r.addEventListener('mouseup', () => gameInstance.rightPressed = false); r.addEventListener('touchstart', e => { e.preventDefault(); gameInstance.rightPressed = true; }); r.addEventListener('touchend', () => gameInstance.rightPressed = false); }
+        }, 20);
+      } else if(gameState === 'gameover') {
+        const strip = document.createElement('div'); strip.className = 'character-strip';
+        CHARACTERS.forEach(e => { const b = document.createElement('button'); b.className = 'char-option' + (e===currentEmoji?' selected':''); b.textContent = e; b.onclick = () => { document.querySelectorAll('.char-option').forEach(bt => bt.classList.remove('selected')); b.classList.add('selected'); currentEmoji = e; }; strip.appendChild(b); });
+        gameUI.appendChild(strip);
+        const restart = document.createElement('button'); restart.className = 'restart-btn'; restart.textContent = '⟳ RESTART'; restart.onclick = () => { gameState = 'playing'; gameInstance.reset(); gameInstance.forceStart(); renderGameUI(); };
+        gameUI.appendChild(restart);
+      }
+    }
+
+    console.log('✅ HYPER+ v3.2.1 completo e funcional!');
+  })();
+</script>
+</body>
+</html>
